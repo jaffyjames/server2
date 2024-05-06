@@ -1,6 +1,6 @@
 //const webSocket = new WebSocket("ws://92.14.175.166:3008")
 //const webSocket = new WebSocket("ws://127.0.0.1:3008")
-const webSocket = new WebSocket("ws://0.0.0.0:3008")
+const webSocket = new WebSocket("ws://server2-y0jg.onrender.com:3008")
 
 webSocket.onmessage = (event) => {
     handleSignallingData(JSON.parse(event.data))
