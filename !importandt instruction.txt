@@ -1,0 +1,5 @@
+url should be same address as addresses in sender and reciver.js files, eg 127.0.0.1
+
+serving the html from the node;
+http://localhost:3008/sender.html
+http://localhost:3008/rec.html

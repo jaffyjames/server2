@@ -1,10 +1,12 @@
-const Socket = require("websocket").server;
 const http = require("http");
-const express = require('express');
+const WebSocket = require("websocket").server;
 const fs = require("fs");
 const path = require("path");
 
-const app = express();
+const express = require('express')
+const https = require('https')
+
+const app = express()
 
 app.use('/', (req, res, next) => {
   // Determine the file path
@@ -30,36 +32,39 @@ app.use('/', (req, res, next) => {
       res.end(content, "utf8");
     }
   });
-});
+})
 
-const server = http.createServer(app);
+const sslServer = https.createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+  },
+  app
+)
 
-server.listen(3008, () => {
-    console.log("Listening on port 3008...");
-});
+sslServer.listen(3008, () => console.log('Secure server 🚀🔑 on port 3008'))
 
-const webSocket = new Socket({ httpServer: server });
+const webSocket = new WebSocket({ httpServer: sslServer });
 
 let users = [];
 
-webSocket.on('request', (req) => {
+webSocket.on("request", (req) => {
     const connection = req.accept();
 
-    connection.on('message', (message) => {
+    connection.on("message", (message) => {
         const data = JSON.parse(message.utf8Data);
 
         const user = findUser(data.username);
 
-        switch(data.type) {
+        switch (data.type) {
             case "store_user":
-
                 if (user != null) {
                     return;
                 }
 
                 const newUser = {
-                     conn: connection,
-                     username: data.username
+                    conn: connection,
+                    username: data.username
                 };
 
                 users.push(newUser);
@@ -76,7 +81,7 @@ webSocket.on('request', (req) => {
                 }
                 if (user.candidates == null)
                     user.candidates = [];
-                
+
                 user.candidates.push(data.candidate);
                 break;
             case "send_answer":
@@ -108,7 +113,7 @@ webSocket.on('request', (req) => {
                     type: "offer",
                     offer: user.offer
                 }, connection);
-                
+
                 user.candidates.forEach(candidate => {
                     sendData({
                         type: "candidate",
@@ -120,7 +125,7 @@ webSocket.on('request', (req) => {
         }
     });
 
-    connection.on('close', (reason, description) => {
+    connection.on("close", (reason, description) => {
         users.forEach(user => {
             if (user.conn == connection) {
                 users.splice(users.indexOf(user), 1);

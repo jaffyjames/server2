@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>NJS Sender</title>
+        <title>Sender NODEJS</title>
         <link rel="stylesheet" href="../style.css">
     </head>
     <body>
@@ -11,6 +11,12 @@
                     id="username-input" /><br>
             <button onclick="sendUsername()">Send</button>
             <button onclick="startCall()">Start Call</button>
+			        <div>
+            <input placeholder="Enter username..."
+                    type="text"
+                    id="username-input" /><br>
+            <button onclick="joinCall()">Join Call</button>
+        </div>
         </div>
         <div id="video-call-div">
             <video muted id="local-video" autoplay></video>

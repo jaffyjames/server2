@@ -1,65 +1,61 @@
-const Socket = require("websocket").server;
 const http = require("http");
+const https = require('https');
 const express = require('express');
+const WebSocket = require("websocket").server;
 const fs = require("fs");
 const path = require("path");
 
 const app = express();
 
+// HTTP server
+const httpServer = http.createServer(app);
+
+httpServer.listen(3007, () => {
+  console.log('HTTP server 🚀 on port 3007');
+});
+
+// HTTPS server
+const httpsServer = https.createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem')),
+  },
+  app
+);
+
+httpsServer.listen(3008, () => {
+  console.log('HTTPS server 🚀🔑 on port 3008');
+});
+
+// Express middleware for serving static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Express route for handling other requests
 app.use('/', (req, res, next) => {
-  // Determine the file path
-  let filePath = path.join(__dirname, "public", req.url === "/" ? "index.html" : req.url);
-    
-  // Read the file
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      if (err.code === "ENOENT") {
-        // Page not found
-        fs.readFile(path.join(__dirname, "public", "404.html"), (err, content) => {
-          res.writeHead(404, { "Content-Type": "text/html" });
-          res.end(content, "utf8");
-        });
-      } else {
-        // Server error
-        res.writeHead(500);
-        res.end(`Server Error: ${err.code}`);
-      }
-    } else {
-      // Successful response
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(content, "utf8");
-    }
-  });
+  res.send('Hello from SSL server');
 });
 
-const server = http.createServer(app);
-
-server.listen(3008, () => {
-    console.log("Listening on port 3008...");
-});
-
-const webSocket = new Socket({ httpServer: server });
+const webSocket = new WebSocket({ httpServer: httpServer });
 
 let users = [];
 
-webSocket.on('request', (req) => {
+webSocket.on("request", (req) => {
     const connection = req.accept();
 
-    connection.on('message', (message) => {
+    connection.on("message", (message) => {
         const data = JSON.parse(message.utf8Data);
 
         const user = findUser(data.username);
 
-        switch(data.type) {
+        switch (data.type) {
             case "store_user":
-
                 if (user != null) {
                     return;
                 }
 
                 const newUser = {
-                     conn: connection,
-                     username: data.username
+                    conn: connection,
+                    username: data.username
                 };
 
                 users.push(newUser);
@@ -76,7 +72,7 @@ webSocket.on('request', (req) => {
                 }
                 if (user.candidates == null)
                     user.candidates = [];
-                
+
                 user.candidates.push(data.candidate);
                 break;
             case "send_answer":
@@ -108,7 +104,7 @@ webSocket.on('request', (req) => {
                     type: "offer",
                     offer: user.offer
                 }, connection);
-                
+
                 user.candidates.forEach(candidate => {
                     sendData({
                         type: "candidate",
@@ -120,7 +116,7 @@ webSocket.on('request', (req) => {
         }
     });
 
-    connection.on('close', (reason, description) => {
+    connection.on("close", (reason, description) => {
         users.forEach(user => {
             if (user.conn == connection) {
                 users.splice(users.indexOf(user), 1);
